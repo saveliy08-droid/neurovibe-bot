@@ -1,4 +1,5 @@
 import asyncio
+import time
 from aiogram import Bot, Dispatcher, F
 from aiogram.types import Message, ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.fsm.context import FSMContext
@@ -7,8 +8,11 @@ from aiohttp import web
 
 BOT_TOKEN = "8935945535:AAGNrZhDJl290DgDIfOZVq6lS3KZXrZjfvQ"
 ADMIN_ID = 1722349114
-GROUP_ID = -5274257178  # <--- ПРОВЕРЬ: Тут должен стоять ID ТВОЕЙ группы с минусом
+GROUP_ID = -5274257178  # Твой точный ID группы!
 PRIVAT_LINK = "https://t.me/+v73ppsyz22w1ZGIy"
+
+# Словарь для хранения КД (айди юзера: время последнего сообщения)
+user_cooldowns = {}
 
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
@@ -47,6 +51,17 @@ async def privat_channel(message: Message):
 
 @dp.message(F.text == "💬 Поддержка и предложения")
 async def start_feedback(message: Message, state: FSMContext):
+    user_id = message.from_user.id
+    current_time = time.time()
+
+    # Проверка на КД (60 секунд)
+    if user_id in user_cooldowns:
+        time_passed = current_time - user_cooldowns[user_id]
+        if time_passed < 60:
+            time_left = int(60 - time_passed)
+            await message.answer(f"⚠️ Не спамь! Ты можешь отправить следующее обращение через {time_left} сек.")
+            return
+
     await state.set_state(FeedbackState.waiting_for_message)
     await message.answer(
         "Напиши своё обращение, вопрос или предложение в одном сообщении (можно прикрепить фото), и я сразу передам его создателю канала.\n\n"
@@ -68,10 +83,12 @@ async def forward_to_admin(message: Message, state: FSMContext):
         f"✍️ Текст: {message.text if message.text else '[Вложение]'}\n"
     )
     
+    # Отправка админу в личку
     await bot.send_message(chat_id=ADMIN_ID, text=user_info)
     if not message.text:
         await message.forward(chat_id=ADMIN_ID)
     
+    # Дублирование в группу
     try:
         await bot.send_message(chat_id=GROUP_ID, text=user_info)
         if not message.text:
@@ -79,13 +96,16 @@ async def forward_to_admin(message: Message, state: FSMContext):
     except Exception as e:
         print(f"Ошибка отправки в группу: {e}")
     
+    # Включаем КД для юзера
+    user_cooldowns[message.from_user.id] = time.time()
+    
     await state.clear()
     await message.answer("Спасибо! Твое сообщение успешно отправлено администратору. Ожидай ответа.", reply_markup=get_main_menu())
 
 @dp.message(F.reply_to_message)
 async def reply_to_user(message: Message):
     is_admin_cl = message.chat.id == ADMIN_ID
-    is_admin_gr = 'GROUP_ID' in globals() and message.chat.id == GROUP_ID
+    is_admin_gr = message.chat.id == GROUP_ID
     
     if not (is_admin_cl or is_admin_gr):
         return
