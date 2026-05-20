@@ -23,18 +23,19 @@ def get_main_menu():
     return ReplyKeyboardMarkup(keyboard=kb, resize_keyboard=True)
 
 @dp.message(F.text == "/start")
+@dp.message(F.text == "/start")
 async def cmd_start(message: Message):
     await message.answer(
         f"Привет, {message.from_user.first_name}! 👋\n\n"
-        f"Добро пожаловать в **neurovibeBOT**! ⚡️\n\n"
-        f"Здесь ты можете получить доступ к нашему закрытому комьюнити или связаться с администрацией.\n\n"
-        f"**What тут можно сделать?**\n"
-        f"💎 **Приватный канал** — забрать актуальную ссылку на вход в приватку.\n"
-        f"💬 **Поддержка и предложения** — задать вопрос или поделиться своей крутой идеей. Админ читает абсолютно всё!\n\n"
-        f"Выбери нужный раздел в меню ниже 👇",
-        reply_markup=get_main_menu(),
-        parse_mode="Markdown"
+        f"Добро пожаловать в neurovibeBOT! ⚡️\n\n"
+        f"Здесь ты можешь получить доступ к нашему закрытому комьюнити или связаться с администрацией.\n\n"
+        f"Что тут можно сделать?\n"
+        f"💎 Приватный канал — забрать актуальную ссылку на вход в приватку.\n"
+        f"💬 Поддержка и предложения — задать вопрос, сообщить о проблеме или поделиться своей крутой идеей. Пиши, админ читает абсолютно всё!\n\n"
+        f"Выбирай нужный раздел в меню ниже 👇",
+        reply_markup=get_main_menu()
     )
+
 
 @dp.message(F.text == "💎 Приватный канал")
 async def open_private(message: Message):
